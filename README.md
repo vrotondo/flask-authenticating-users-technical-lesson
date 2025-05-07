@@ -2,10 +2,9 @@
 
 ## Scenario
 
-We've covered how cookies can be used to store data in a user's browser.
-
-One of the most common uses of cookies is for login. In this lesson, we'll cover
-how to use the Flask session to log users in.
+We've seen how cookies can be used to store data in a user's browser. One of the most common
+uses of cookies is for login. In this lesson, we'll cover how to use the Flask session to log
+users in.
 
 ## Tools & Resources
 
