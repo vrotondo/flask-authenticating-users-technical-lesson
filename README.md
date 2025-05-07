@@ -1,69 +1,51 @@
-# Authenticating Users
+# Technical Lesson: Authenticating Users
 
-## Learning Goals
-
-- Define the term "authentication".
-- Understand how websites use login to authenticate users.
-- Follow REST conventions for handling session data.
-
----
-
-## Key Vocab
-
-- **Identity and Access Management (IAM)**: a subfield of software engineering
-  that focuses on users, their attributes, their login information, and the
-  resources that they are allowed to access.
-- **Authentication**: proving one's identity to an application in order to
-  access protected information; logging in.
-- **Authorization**: allowing or disallowing access to resources based on a
-  user's attributes.
-- **Session**: the time between a user logging in and logging out of a web
-  application.
-- **Cookie**: data from a web application that is stored by the browser. The
-  application can retrieve this data during subsequent sessions.
-
----
-
-## Introduction
+## Scenario
 
 We've covered how cookies can be used to store data in a user's browser.
 
 One of the most common uses of cookies is for login. In this lesson, we'll cover
 how to use the Flask session to log users in.
 
----
+## Tools & Resources
 
-## Authentication
+- [GitHub Repo](https://github.com/learn-co-curriculum/flask-authenticating-users-technical-lesson)
+- [What is Authentication? - auth0](https://auth0.com/intro-to-iam/what-is-authentication)
+- [API - Flask: class flask.session](https://flask.palletsprojects.com/en/2.2.x/api/#flask.session)
+- [Flask RESTful Documentation](https://flask-restful.readthedocs.io/en/latest/quickstart.html)
 
-Nearly every website in the world uses what we like to call the "wristband"
-pattern. A lot of nightclubs use this pattern as well.
+## Set Up
 
-You arrive at the club. The bouncer checks your ID. They put a wristband on your
-wrist (or stamp your hand). They let you into the club.
+There is some starter code in place for a Flask API backend.
+To get set up, run:
 
-If you leave and come back, the bouncer doesn't look at your ID, they just look
-for your wristband. If you buy a drink, the bartender doesn't need to see your
-ID, since your wristband proves you're old enough to buy alcohol.
+```bash
+pipenv install
+pipenv shell
+cd server
+flask db upgrade
+python seed.py
+```
 
-You arrive at [gmail.com](http://mail.google.com). You submit your username and
-password. Google's servers check to see if your credentials are correct. If they
-are, Google's servers issue a cookie to your browser. If you visit another page
-on gmail — or anywhere on google.com for that matter — your browser will show
-the cookie to the server. The server verifies this cookie, and lets you load
-your inbox.
+You can run the Flask server with:
 
-The term we use to describe this process is **authentication**. When we talk
-about authentication in our applications, we are describing how our application
-can **confirm that our users are who they say they are**.
+```bash
+python app.py
+```
 
----
+## Instructions
 
-## How This Looks in Flask
+### Task 1: Define the Problem
 
-Let's look at what the simplest possible login system might look like in a Flask
-API/React application.
+We are tasked with building the backend for the login feature of a new application.
+The frontend will be handled by another team, but we need to provide endpoints for them to
+- log a user in
+- log a user out
+- check if a user is logged in on refresh
 
-The flow will look like this:
+### Task 2: Determine the Design
+
+The login/logout flow will look like:
 
 - The user navigates to a login form on the React frontend.
 - The user enters their username. There is no password (for now).
@@ -73,10 +55,102 @@ The flow will look like this:
 - Thereafter, the user is logged in. `session['user_id']` will hold their user
   ID.
 
+We'll also use a new package - `flask-restful` - for creating our routes. Flask Restful
+will allow us to easily define GET, POST, PATCH, and DELETE requests at a route. For example,
+if we have an API that allows full CRUD of a Note:
+
+```python
+from flask import Flask, make_response, request, session
+from flask_migrate import Migrate
+from flask_restful import Api, Resource
+
+from models import db, Note, NoteSchema
+
+# Define class for endpoint /notes, inheritting from flask_restful's Resource
+class Notes(Resource):
+    # route function for GET /notes
+    def get(self):
+        notes = Note.query.all()
+        return NoteSchema().dump(notes)
+
+    # route function for POST /notes    
+    def post(self):
+      new_note = Note(
+          title=request.form['title'],
+          body=request.form['body'],
+      )
+
+      db.session.add(new_record)
+      db.session.commit()
+
+      response = make_response(
+          NoteSchema().dump(new_note),
+          201,
+      )
+
+      return response
+
+# Define class for endpoint /notes/<id>, inheritting from flask_restful's Resource
+class NoteByID(Resource):
+    # route function for GET /notes/<id>
+    def get(self, id):
+
+        note = Note.query.filter_by(id=id).first()
+
+        response = make_response(
+            NoteSchema().dump(note),
+            200,
+        )
+
+        return response
+
+    # route function for PATCH /notes/<id>
+    def patch(self, id):
+
+        note = Note.query.filter_by(id=id).first()
+        for attr in request.form:
+            setattr(record, attr, request.form[attr])
+
+        db.session.add(note)
+        db.session.commit()
+
+        response = make_response(
+            NoteSchema().dump(note),
+            200
+        )
+
+        return response
+
+    # route function for DELETE /notes/<id>    
+    def delete(self, id):
+
+        note = Note.query.filter(Note.id == id).first()
+
+        db.session.delete(note)
+        db.session.commit()
+
+        response = make_response(
+            {"message": "record successfully deleted"},
+            200
+        )
+
+        return response
+
+# Add Notes routes to API
+api.add_resource(Notes, '/notes')
+# Add NoteByID routes to API
+api.add_resource(NoteByID, '/notes/<int:id>')
+```
+
+### Task 3: Develop, Test, and Refine the Code
+
+#### Step 1: Allowing Users to Login
+
 Let's write a view to handle our login route. This class will handle `POST`
 requests to `/login`:
 
 ```py
+# Define class for /login routes
 class Login(Resource):
 
     def get(self):
@@ -85,16 +159,17 @@ class Login(Resource):
     def post(self):
         ...
 
+# Add routes from Login class to API
 api.add_resource(Login, '/login')
-
 ```
 
-> **NOTE: Check out the REST module for a reminder on setting up CRUD APIs with
-> Flask RESTful! We left out the imports and whatnot here.**
+This request should include login credentials (such as username and password)
+from a frontend login form. We'll discuss password protection in the next module.
+For now, we'll just look at receiving a "username" from the frontend.
 
-Typically, your `post()` method would look up a user in the database, verify
-their login credentials, and then store the authenticated user's id in the
-session:
+When we get the username, we'll want to look in our database to see if that user exists.
+If the user exists, we need to log them in by creating a session. If the user doesn't,
+we'll send an invalid login response.
 
 ```py
 class Login(Resource):
@@ -103,14 +178,16 @@ class Login(Resource):
         user = User.query.filter(
             User.username == request.get_json()['username']
         ).first()
-
-        session['user_id'] = user.id
-        return user.to_dict()
-
+        
+        if user:
+            session['user_id'] = user.id
+            return UserSchema().dump(user)
+        else:
+            return {'message': 'Invalid login'}, 401
 ```
 
-There's no way for the server to log you out right now. To log yourself out,
-you'll have to delete the cookie from your browser.
+Once logged in, there's no way for the server to log a user out right now.
+To allow log out, we'll have to delete the cookie from the user's browser.
 
 Here's what the login component might look like on the frontend:
 
@@ -147,9 +224,7 @@ function Login({ onLogin }) {
 When the user submits the form, they'll be logged in! Our `onLogin` callback
 function would handle saving the logged in user's details in state.
 
----
-
-## Staying Logged In
+#### Step 2: Allowing Users to Stay Logged In
 
 Using the wristband analogy, in the example above, we've shown our ID at the
 door (`username`) and gotten our wristband (`session['user_id']`) from the
@@ -174,16 +249,17 @@ class CheckSession(Resource):
     def get(self):
         user = User.query.filter(User.id == session.get('user_id')).first()
         if user:
-            return user.to_dict()
+            return UserSchema().dump(user)
         else:
             return {'message': '401: Not Authorized'}, 401
 
 api.add_resource(CheckSession, '/check_session')
-
 ```
 
-Then, we can try to log the user in from the frontend as soon as the application
-loads:
+The frontend would then be able to include a request to `/check_session` in
+a useEffect, so on page load the application will be able to keep the user logged in.
+
+Here's what that might look like in the React App component:
 
 ```jsx
 function App() {
@@ -208,21 +284,18 @@ function App() {
 This is the equivalent of letting someone use their wristband to come back into
 the club.
 
----
-
-## Logging Out
+#### Step 3: Allowing Users to Log Out
 
 The log out flow is even simpler. We can add a new route for logging out:
 
 ```py
 class Logout(Resource):
 
-    def delete(self): # just add this line!
+    def delete(self):
         session['user_id'] = None
         return {'message': '204: No Content'}, 204
 
 api.add_resource(Logout, '/logout')
-
 ```
 
 Here's how that might look in the frontend:
@@ -246,9 +319,38 @@ function Navbar({ onLogout }) {
 The `onLogout` callback function would handle removing the information about the
 user from state.
 
----
+#### Step 4: Commit and Push Git History
 
-## Cookies, Sessions, and Proxies
+* Commit and push your code:
+
+```bash
+git add .
+git commit -m "final solution"
+git push
+```
+
+* If you created a separate feature branch, remember to open a PR on main and merge.
+
+### Task 4: Document and Maintain
+
+Best Practice documentation steps:
+* Add comments to the code to explain purpose and logic, clarifying intent and functionality of your code to other developers.
+* Update README text to reflect the functionality of the application following https://makeareadme.com. 
+  * Add screenshot of completed work included in Markdown in README.
+* Delete any stale branches on GitHub
+* Remove unnecessary/commented out code
+* If needed, update git ignore to remove sensitive data
+
+## Conclusion
+
+At its base, login is very simple: the user provides you with credentials by
+filling out a form, you verify those credentials and set a token in the
+`session`. In this example, our token was their user ID. We can also log users
+out by removing their user ID from the session.
+
+## Considerations
+
+### Cookies, Sessions, and Proxies
 
 Since they can't run on the same port, we normally run our `React` client on
 `http://localhost:3000` and `Flask` server on `http://localhost:5555` . We've
@@ -289,49 +391,3 @@ send the request to `http://localhost:5555/login`. The server sends its response
 back through the proxy. The proxy makes it appear as if the client request and
 server response were from the same origin, thus allowing us to use cookies and
 sessions for user authorization.
-
----
-
-## Conclusion
-
-At its base, login is very simple: the user provides you with credentials by
-filling out a form, you verify those credentials and set a token in the
-`session`. In this example, our token was their user ID. We can also log users
-out by removing their user ID from the session.
-
----
-
-## Check For Understanding
-
-Before you move on, make sure you can answer the following questions:
-
-<details>
-  <summary>
-    <em>1. In the login and authentication flow you learned in this lesson for
-        Flask API/React applications, in what two places is authentication
-        information stored?</em>
-  </summary>
-
-  <p>The session (on the server) and a cookie (in the browser).</p>
-</details>
-<br/>
-
-<details>
-  <summary>
-    <em>2. In the login and authentication flow you learned in this lesson, what
-        sequence of events happens if the user refreshes the page?</em>
-  </summary>
-
-  <p>A request is sent to the server at the route corresponding to the current
-     URL. The frontend then sends a request to the server to check if they have
-     an active session. The server sends a response to the frontend, which
-     either redirects them to the desired page or prompts them to log in.</p>
-</details>
-<br/>
-
----
-
-## Resources
-
-- [What is Authentication? - auth0](https://auth0.com/intro-to-iam/what-is-authentication)
-- [API - Flask: class flask.session](https://flask.palletsprojects.com/en/2.2.x/api/#flask.session)
