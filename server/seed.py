@@ -1,4 +1,4 @@
-from models import db, Article, User
+from models import db, User
 
 fake = Faker()
 
