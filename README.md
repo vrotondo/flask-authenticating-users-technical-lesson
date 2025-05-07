@@ -22,6 +22,8 @@ To get set up, run:
 pipenv install
 pipenv shell
 cd server
+flask db init
+flask db migrate -m "initial migration"
 flask db upgrade
 python seed.py
 ```
